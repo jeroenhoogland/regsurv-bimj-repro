@@ -1,16 +1,4 @@
----
-title: "Reproducible research files"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
-    toc_collapsed: true
-    toc_depth: 3
-    number_sections: true
-    theme: lumen
-editor_options: 
-  chunk_output_type: console
----
+# Reproducible research files
 
 This README documents the procedures to replicate all analyses in the manuscript entitled 
 "Regularized parametric survival modeling to improve risk prediction models".
