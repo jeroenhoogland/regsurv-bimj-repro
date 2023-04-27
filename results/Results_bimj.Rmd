@@ -1,0 +1,407 @@
+---
+title: "Results"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  cache=FALSE, 
+  comment = "#>"
+)
+knitr::opts_knit$set(root.dir="../")
+```
+
+This Markdown file reproduces all results for the manuscript entitled 
+"Regularized parametric survival modeling to improve risk prediction models".
+
+Authors: J Hoogland, TPA Debray, MJ Crowther, RD Riley, J IntHout, JB Reitsma, AH Zwinderman
+Code was written by J Hoogland
+In case of questions or comments please contact j.hoogland@amsterdamumc.nl
+
+All Figures are stored in folder `./figures` instead of being rendered.
+
+# Simulation study
+
+This sections reproduces all results and figures based on the provided intermediate results. For replication of the intermediate results, please refer to the README file. 
+
+```{r load required packages, include=FALSE}
+library(stringr)
+library(RColorBrewer)
+# setwd("../") # insert path to current project
+```
+
+## Main simulation study
+
+```{r load intermediate results}
+dir <- "intermediates/" 
+
+# load all output file names
+files <- list.files(dir)
+
+# select those belonging to the main simulation study
+files <- grep("survsim[0-9].*RData", files, value = TRUE)
+
+# number of simulations
+(nsim <- length(files))
+
+# load the files
+numextract <- function(string){
+  as.numeric(str_extract(string, "\\-*\\d+"))
+}
+files <- files[order(numextract(files))]
+
+# put everything into a single object sr
+sr <- plyr::llply(paste0(dir, files), function(x){
+  load(x)
+  return(list=(r=results))}, .progress = "none")
+
+# object sr now contains all simulation results
+# each sim gets the its own name
+names(sr) <- paste0("sim", numextract(files))
+
+# Rearrange hierarchy of results to method > iteration > scenario > measures
+sr <- do.call(function(...) Map(list, ...), sr)
+
+nn <- 4 # number of scenarios
+sample.size.settings <- 1:4
+nmethods <- 10 # number of methods
+methods <- c("RegHazTV", "RegCumHazTV", "CoxPH", "CoxTV", "CoxPHlasso", "CoxTVridge", "RPrcsPH",
+             "RPrcsTV", "RPssPH", "RPssTV")
+```
+
+### Figures (main)
+
+All figures for the main manuscript are rendered as .eps (vector type) and stored in the `figures` folder. Supplementary material plots (calibration and discrimination performance) are rendered as .pdf and are also stored in the `figures` folder.
+
+```{r}
+dir <- "figures/"
+postfix <- ""
+filetype <- ".eps"
+source("sim/figures_sim.R")
+```
+
+Median processing times in minutes
+
+```{r}
+tt <- round(apply(times, c(1,2), median) / 60, 1)
+dimnames(tt) <- list(c(paste0("N=", c(100, 250, 500, 100))), 
+                     c(methods))
+tt
+```
+
+## Higher censoring
+
+For the settings with increased censoring, the R code is exactly analogous to the above code for the main settings. It is of course included in the `.Rmd` file, but not shown here.
+
+```{r load intermediate results highcens, include=FALSE}
+dir <- "intermediates/" 
+
+# load all output file names
+files <- list.files(dir)
+
+# select those belonging to the main simulation study
+files <- grep("survsim_highcens[0-9].*RData", files, value = TRUE)
+
+# number of simulations
+(nsim <- length(files))
+
+# load the files
+numextract <- function(string){
+  as.numeric(str_extract(string, "\\-*\\d+"))
+}
+files <- files[order(numextract(files))]
+
+sr <- plyr::llply(paste0(dir, files), function(x){
+  load(x)
+  return(list=(r=results))}, .progress = "none")
+
+# object sr now contains all simulation results
+# each sim gets the its own name
+names(sr) <- paste0("sim", numextract(files))
+
+# Rearrange hierarchy of results to method > iteration > scenario > measures
+sr <- do.call(function(...) Map(list, ...), sr)
+
+sample.size.settings <- 2:4
+```
+
+### Figures (higher censoring)
+
+All figures for the main manuscript are rendered as .eps (vector type) and stored in the `figures` folder. Supplementary material plots (calibration and discrimination performance) are rendered as .pdf and are also stored in the `figures` folder.
+
+```{r}
+dir <- "figures/"
+postfix <- "highcens"
+filetype <- ".eps"
+source("sim/figures_sim.R")
+```
+
+## Higher number of covariates
+
+For the settings with a higher number of covariates, the R code is exactly analogous to the above code for the main settings. It is of course included in the `.Rmd` file, but not shown here.
+
+```{r load intermediate results highp, include=FALSE}
+dir <- "intermediates/" 
+
+# load all output file names
+files <- list.files(dir)
+
+# select those belonging to the main simulation study
+files <- grep("survsim_highp[0-9].*RData", files, value = TRUE)
+
+# number of simulations
+(nsim <- length(files))
+
+# load the files
+numextract <- function(string){
+  as.numeric(str_extract(string, "\\-*\\d+"))
+}
+files <- files[order(numextract(files))]
+
+sr <- plyr::llply(paste0(dir, files), function(x){
+  load(x)
+  return(list=(r=results))}, .progress = "none")
+
+# object sr now contains all simulation results
+# each sim gets the its own name
+names(sr) <- paste0("sim", numextract(files))
+
+# Rearrange hierarchy of results to method > iteration > scenario > measures
+sr <- do.call(function(...) Map(list, ...), sr)
+```
+
+### Figures (higher p)
+
+All figures for the main manuscript are rendered as .eps (vector type) and stored in the `figures` folder. Supplementary material plots (calibration and discrimination performance) are rendered as .pdf and are also stored in the `figures` folder.
+
+```{r}
+dir <- "figures/"
+postfix <- "highp"
+filetype <- ".eps"
+source("sim/figures_sim.R")
+```
+
+### Data generating mechinism figure
+
+```{r}
+S0 <- function(lambdas, gammas, pmix, t){
+  (pmix * exp(-lambdas[1] * t^(gammas[1])) + (1-pmix) * exp(-lambdas[2] * t^(gammas[2])))
+}
+H0 <- function(lambdas, gammas, pmix, t){
+  -log(pmix * exp(-lambdas[1] * t^(gammas[1])) + (1-pmix) * exp(-lambdas[2] * t^(gammas[2])))
+}
+h0 <- function(lambdas, gammas, pmix, t){
+  (lambdas[1] * gammas[1] * t^(gammas[1]-1) * pmix * exp(-lambdas[1] * t^(gammas[1])) +
+     lambdas[2] * gammas[2] * t^(gammas[2]-1) * (1-pmix) * exp(-lambdas[2] * t^(gammas[2]))) /
+    (pmix * exp(-lambdas[1] * t^(gammas[1])) + (1-pmix) * exp(-lambdas[2] * t^(gammas[2])))
+}
+truehazard <- function(eventtime, X, groundtruth){
+  with(groundtruth, h0(lambdas, gammas, pmix, t=eventtime) *
+         as.vector(exp(as.matrix(X[, names(betas)]) %*% betas +
+                         as.matrix(X[, names(tde)] * tdefunction(eventtime)) %*% tde)))
+}
+truecumhazard <- function(eventtime, X, groundtruth){
+  sapply(1:nrow(X), function(s){
+    stats::integrate(truehazard, lower=0, upper=eventtime[s],
+                     X=X[s, ], groundtruth=groundtruth)$value
+  })
+}
+
+rm(list=ls()[!ls() %in% c("h0","H0","S0","truecumhazard", "truehazard")])
+
+maxt <- 30
+t <- seq(0, maxt, 0.01)
+lambdas <- c(.25,.6)/12
+gammas <- c(1.1,1.4)
+pmix <- 0.4
+betas = c("x1" = 0, "x2"= 0, "x3"=.5, "x4"=-.5, "x5"=.25, "x6"=-.25, "x7"=.125, "x8"=-.125, "x9"=0.0625, "x10"=-0.0625, "x11"=.5)
+tdefunction <- function(t) .9^t
+tde <- c("x1" = -1, "x2"=.75, "x3"=-.5)
+
+setEPS()
+postscript(file="figures/dgm.eps",
+           width = .8*8, height = .8*6.6)
+par(mfrow=c(2,3))
+plot(S0(lambdas, gammas, pmix, t) ~ t, type="l", ylim=c(0,1),
+     main=expression(paste("S"[0])), ylab="Survival probability", xlab="Time")
+plot(H0(lambdas, gammas, pmix, t) ~ t, type="l",
+     main=expression(paste("H"[0])), ylab="Cumulative hazard", xlab="Time")
+plot(h0(lambdas, gammas, pmix, t) ~ t, type="l",
+     main=expression(paste("h"[0])), ylab="Hazard", xlab="Time")
+
+# par(mfrow=c(2,3))
+plot(betas[1] + tde[1] * tdefunction(t) ~ t, type="l", ylim=c(-1,1),
+     main=expression(paste(beta[1](t))), ylab="log hazard ratio", xlab="Time"); abline(h=0, lty=3)
+plot(betas[2] + tde[2] * tdefunction(t) ~ t, type="l", ylim=c(-1,1),
+     main=expression(paste(beta[2](t))), ylab="log hazard ratio", xlab="Time"); abline(h=0, lty=3)
+plot(betas[3] + tde[3] * tdefunction(t) ~ t, type="l", ylim=c(-1,1),
+     main=expression(paste(beta[3](t))), ylab="log hazard ratio", xlab="Time"); abline(h=0, lty=3)
+dev.off()
+```
+
+# Applied example (Veterans' Administration Lung Cancer study)
+
+```{r, echo=FALSE}
+library(regsurv)
+library(survival)
+library(polspline)
+library(rstpm2)
+library(glmnet)
+library(Hmisc)
+library(dplyr)
+```
+
+```{r}
+head(veteran)
+dim(veteran)
+sum(is.na(veteran))
+```
+
+## Cox PH model
+
+The code below fits the main effects Cox proportional hazards model and provides the Grambsch and Therneau tests on Schoenfeld residuals.
+
+```{r}
+names(veteran)[which(names(veteran) == "time")] <- "eventtime"
+veteran <- veteran[order(veteran$eventtime, -veteran$status), ]
+row.names(veteran) <- NULL
+
+mod0 <- coxph(Surv(eventtime, status) ~ trt + celltype + karno +
+                diagtime + age + prior, data=veteran)
+mod0
+(zph <- cox.zph(mod0))
+```
+
+## Collect model matrix and event time information
+
+```{r}
+# model matrix
+mm <- model.matrix( ~ trt + celltype + karno +
+                      diagtime + age + prior,
+                      data=veteran)
+X <- mm[ ,-1]
+
+# fixed.times <- as.numeric(quantile(veteran$eventtime[veteran$status==1], probs=seq(.1,.9,.1)))
+# evaluation times 60, 90, 120, 150 and 180 based on reviewer comments 
+fixed.times <- seq(60, 180, 30)
+unique.event.times <- unique(veteran$eventtime[veteran$status %in% 1])
+time.grid <- cbind(veteran$eventtime, do.call(cbind, lapply(fixed.times, function(x) rep(x, nrow(veteran)))))
+event.times <- veteran$eventtime
+```
+
+## Evaluate all modeling methods in the whole sample
+
+```{r}
+# ## (NOT RUN) # takes 6-8 minutes
+# ptm <- proc.time()
+# set.seed(1)
+# source("ae/ae_apparent.R")
+# proc.time() - ptm
+# save(apparent, predict.grid, file="ae/ae_apparent_bimj.RData")
+load("ae/ae_apparent_bimj.RData")
+```
+
+## Bootstrap results
+
+Bootstrap intermediates
+
+```{r}
+files <- list.files("intermediates/")
+files <- grep("ae.*RData", files, value = TRUE)
+(nboot <- length(files))
+
+numextract <- function(string){
+  as.numeric(str_extract(string, "\\-*\\d+"))
+}
+
+files <- files[order(numextract(files))]
+
+sr <- plyr::llply(paste0("intermediates/", files), function(x){
+  load(x)
+  return(list=(r=boot))}, .progress = "none")
+
+names(sr) <- paste0("boot", numextract(files))
+
+# Rearrange hierarchy of results to method > iteration > scenario > measures
+sr <- do.call(function(...) Map(list, ...), sr)
+
+# time elapsed per bootstrap run (not used in the manscript)
+hist(unlist(sr$time.elapsed.sec)/ 60,
+     xlab="Time in minutes",
+     main="Bootstrap computing times")
+
+nmethods <- 12
+index <- c(1:5,7:12) # all 12 but CoxTVridge, which did not converge in the full sample
+```
+
+### Table 1
+
+```{r}
+# out-of-bag time averaged Ctd
+coob <- sapply(1:nboot, function(x){
+  sapply(sr$cstats.oob[[x]][index], function(xx) xx$Ctd)})
+col1 <- round(apply(coob, 1, mean), 3)
+col2 <- round(apply(coob, 1, sd), 3)
+
+# out-of-bag Ctd for t=60 days
+cfoob <- lapply(1:nboot, function(x){
+  array(as.numeric(sapply(sr$cstats.fixed.oob[[x]][index], function(xx) xx["Ctd",])), dim=c(5,11))})
+cfoob <- array(unlist(cfoob), dim=c(5, 11, nboot))
+col3 <- round(apply(cfoob, c(1,2), mean), 3)[1, ]
+col4 <- round(apply(cfoob, c(1,2), sd), 3)[1, ]
+
+table1 <- data.frame("method" = c("RegHazTV", "RegCumHazTV", "CoxPH", "CoxTV", "CoxPHridge", 
+             "RPrcsPH", "RPrcsTV", "RPssPH", "RPssTV", "RegHazPH", "RegCumHazPH"),
+             "Ctd.est" = col1, "Ctd.se"=col2, "Ctd.t60"=col3, "Ctd.t60.se"=col4)
+table1
+```
+
+### Calibration figures
+
+```{r}
+methods.ae <- c("RegHazTV", "RegCumHazTV", "CoxPH", "CoxTV", "CoxPHridge",  "CoxTVridge",
+             "RPrcsPH", "RPrcsTV", "RPssPH", "RPssTV", "RegHazPH", "RegCumHazPH")
+
+dir <- "figures/"
+predict.grid <- 1-predict.grid
+m=t=1
+for(t in 1:length(fixed.times)){
+  if(fixed.times[t] %in% c(60, 120, 180)){
+    setEPS()
+    postscript(file=paste0(dir, "cal_ae", "_t",fixed.times[t], ".eps"),
+               width = 8, height = 7)
+    par(mfrow=c(3,4))
+    par(font.main = 1)
+    for(m in index){
+      
+      cal <- 1-sapply(sr$cal.oob, function(x) x[[m]][[t]]$hare.cal.obs)
+      calmean <- apply(cal, 1, function(x) mean(x, na.rm=TRUE))
+      cal10 <- apply(cal, 1, function(x) quantile(x, probs=0.1, na.rm=TRUE))
+      cal90 <- apply(cal, 1, function(x) quantile(x, probs=0.9, na.rm=TRUE))
+      
+      plot(calmean ~ predict.grid[,t], type="l", xlim=c(0,1), ylim=c(0,1), lwd=2,
+           main=paste0(methods.ae[m],", t=",fixed.times[t]),
+           ylab="Observed", xlab="Predicted")
+      lines(cal10 ~ predict.grid[,t], lty=3, lwd=2)
+      lines(cal90 ~ predict.grid[,t], lty=3, lwd=2)
+      abline(0,1,lty=1,col="red")
+    }
+  dev.off()
+  }
+}
+```
+
+
+
+
+Done.
