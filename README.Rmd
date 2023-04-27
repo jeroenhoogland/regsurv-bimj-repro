@@ -1,14 +1,14 @@
 ---
 title: "Reproducible research files"
 output: 
-  github_document:  # uncomment to render GitHub README.md
-  html_document:
-    toc: true
-    toc_float: true
-    toc_collapsed: true
-    toc_depth: 3
-    number_sections: true
-    theme: lumen
+  github_document:  # uncomment html lines and comment this line to render a README.html
+  # html_document:
+  #   toc: true
+  #   toc_float: true
+  #   toc_collapsed: true
+  #   toc_depth: 3
+  #   number_sections: true
+  #   theme: lumen
   editor_options: 
     chunk_output_type: console
 ---
