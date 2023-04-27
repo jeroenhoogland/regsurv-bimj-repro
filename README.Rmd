@@ -1,0 +1,188 @@
+---
+title: "Reproducible research files"
+output: 
+  github_document:  # uncomment to render GitHub README.md
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
+  editor_options: 
+    chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  cache=FALSE, 
+  comment = "#>"
+)
+```
+
+This README documents the procedures to replicate all analyses in the manuscript entitled 
+"Regularized parametric survival modeling to improve risk prediction models".
+
+Authors: J Hoogland, TPA Debray, MJ Crowther, RD Riley, J IntHout, JB Reitsma, AH Zwinderman
+Code was written by J Hoogland
+In case of questions or comments please contact j.hoogland@amsterdamumc.nl
+
+# Software versions
+
+The code was written/evaluated in R with the following software versions:
+
+```{r, include=FALSE}
+library(dplyr)
+library(regsurv)
+library(CVXR)
+library(simsurv)
+library(survival)
+library(MASS)
+library(glmnet)
+library(rstpm2)
+library(polspline)
+library(Hmisc)
+library(stringr)
+```
+
+```{r, echo=FALSE}
+sessionInfo()
+```
+
+As an exception to the above, simulations were run in parallel on a Linux server with software versions:
+
+```{r, echo=FALSE}
+load("intermediates/survsim1.RData")
+results$sessionInfo
+```
+
+# File structure
+
+ * `README.html` the general README information you're now reading.
+ * Folder `Results` contains 
+   * `Results_bimj.Rmd` contains the Markdown script to generate `Results_bimj.html`, which generates all results for the manuscript.
+ * Folder `./sim/` contains all R scripts pertaining to the simulation study
+   * `dgm.R` contain the R script to generate all simulated data (files `groundtruth.RData`, `dev_population.RData`, and `validation.RData`) and the supplementary in the data generating mechanims section (`dgm.eps`).
+   * `master_sim.R` Master file that runs all simulations and stores the results. Note that each run has its own random seed, such that individual runs can be replicated. NB: All sample size settings are generated from the same run.
+   * `groundtruth.RData` contains the ground truth for the simulated data.
+   * `dev_population.RData`contains the simulated development population (N=100,000)
+   * `validation.RData` contains the simulated validation data
+   * `helperFunctions.R` contains helper function that are not packaged (only useful to avoid code replication in the current context)
+   * folder `./figures/` contain all manuscript figures in the required formats
+   <!-- * Folder `./HPC_bimj/` contains scripts for the parallel runs on a linux server (not required) -->
+     <!-- * `*.sh` shell scripts that contains the code to run the simulations on a CentOS High Performance Grid (HPC) using Slurm. -->
+     <!-- * `*.R` contains the R scripts for a single run for each group of settings (main, high censoring, high p, applied example). -->
+ * Folder `./ae/` contains all R scripts pertaining to the applied example
+   * `ae_apparent.R` contains the R script for the main analyses
+   * `ae_bimj_boot.R` contains the R script for a single bootstrap run
+   * `helperFunctions_ae.R` contains helper function that are not packaged (only useful to avoid code replication in the current context).
+   * `ae_apparent_bimj.RData` contains the pre-computed results of running `ae_apparent.RData`.
+ * Folder `./functions` contains
+   * The documented function `calibrate()` stored in `calibrate.R`, which can be loaded using `source("functions/calibrate.R")`
+   * (Note that all analysis functions are directly loaded from R packages)
+ * Folder `./intermediates/` contains all intermediate files (output files) from the high 
+ performance grid for both the simulations (`survsim*.RData`, `survsim_highp*.RData`, 
+ `survsim_highcens*.RData`) and the applied example (`ae*.RData`), where `*` is replaced by the seed number for the random number generator.
+ 
+ 
+# Reproduce all figures and numerical results
+
+The required computation time for the simulations is long (on average nearly 5 hours for the main simulation runs on the CentOS system and longer for the additional higher dimensional and increased censoring settings). 
+
+Therefore, intermediate files are available for all simulation runs and the bootstrap runs for the applied example.
+
+## The Results_bimj markdown and html
+
+`Results_bimj.Rmd` contains all code to constructs all figures and numerical results from the intermediate files, and the corresponding `html` file `Results_bimj.html` provides the rendered output. Note that numerical results are provided in `Results_bimj.html` (such as Table 1), and that figures are not rendered but stored in the correct format in folder `./figures`. Each of the figures has the exact same file name as in the Latex files, such that they can be inserted in the right place without any modification. 
+
+## Replicating the simulation data
+
+R script `dgm.R` in folder `./sim/` generates all required simulated data and stored it in the right place. Also, it generates `dgm.eps`, which is the supplementary figure on the data generating mechanism. 
+
+Resulting files are stored in folder `./data/` and are named `dev_population.RData` (the part of the simulated population from which development data sets / training data are sampled), `validation.RData` (the part of the simulated population reserved for validation purposes), and `groundtruth.RData` (which contains all necessary information on the true model and true survival probabilities).
+
+## Replicating the intermediate files
+
+First of all, R package **regsurv** needs to be installed from GitHub
+
+```
+library(devtools)
+install_github("jeroenhoogland/regsurv")
+```
+
+### Simulations
+
+In folder `./sim/`, R script `master_sim.R` can run all simulations (for all simulation settings). The specifications for the different simulation settings can be set within the master file and have intuitive names: `sample.size.settings` takes number 1:4 for each of the 4 sample size settings in the manuscript (N=100, 250, 500, 1000), `highercens` is TRUE for the high censoring settings, `higherp` is true for the setting with a larger set of covariates, and both are FALSE for the default simulation settings.
+
+An impression of the script to run the main simulation settings is
+
+```
+# Master script to run the simulation study
+nsim <- 1000
+
+# Main simulations (NOT RUN)
+for(iter in 1:nsim){
+  set.seed(iter)
+  
+  sample.size.settings <- 1:4 # n=100, 250, 500, 1000
+  highercens <- FALSE
+  higherp <- FALSE 
+  
+  source("sim/sims.R")
+  
+  save(results, file= paste0("intermediates/", "survsim", iter, ".RData"))
+}
+```
+
+R script `master_sim.R` also includes a few lines of code that show spot replication of the 10th simulation run for sample size N=100 on a different machine.
+
+As a generic example, to replicate let's say run 98 for sample size setting 1 of the main simulations, the following code can be used:
+
+```
+iter <- 98
+set.seed(iter)
+sample.size.settings <- 1
+highercens <- FALSE
+higherp <- FALSE
+source("sim/sims.R")
+spot_check <- results
+```
+
+On a recent MBP (2021, Apple M1 Pro, 16GB working memory), this takes approximately 48 minutes.
+
+This generates a results object that can be checked against `./intermediates/survsim98.RData`.
+
+For instance, to check the overall root mean squared prediction errors for each of the methods, compare
+
+```
+load("intermediates/survsim98.RData") # loads the results object for sim 98
+all.equal(spot_check$rmse[1,,], results$rmse[1,,], tolerance=10^-5) # should return TRUE
+all.equal(sapply(spot_check$cstats[[1]], function(x) x[1, ]), 
+          sapply(results$cstats[[1]], function(x) x[1, ]), tolerance=10^-5) # should return TRUE
+```
+
+### Applied example
+
+The intermediate files for the applied example can also be reproduced. The apparent (whole sample) results can be replicated using R script `ae_apparent.R` in the `./ae/` folder. The bootstrap runs can be replicated using `ae_bimj_boot.R` in the same folder.
+
+NB boot needs b and seed
+
+For instance:
+
+```
+b <- 9 # for replication of bootstrap 9
+set.seed(b)
+source("ae/ae_bimj_boot.R")
+spot_check <- boot
+```
+
+Checks against
+
+```
+load("intermediates/ae9.RData") 
+unlist(spot_check$cstats.oob) # OOB Ctd estimates
+all.equal(unlist(spot_check$cstats.oob), unlist(boot$cstats.oob), tol=10^-5)
+```
+
+END
