@@ -6,8 +6,19 @@ manuscript entitled “Regularized parametric survival modeling to improve
 risk prediction models”.
 
 Authors: J Hoogland, TPA Debray, MJ Crowther, RD Riley, J IntHout, JB
-Reitsma, AH Zwinderman Code was written by J Hoogland In case of
-questions or comments please contact <j.hoogland@amsterdamumc.nl>
+Reitsma, AH Zwinderman Code was written by J Hoogland
+
+The required files are available as supplementary material on the
+Biometrical Journal website (excluding intermediate output files due to
+their size) and on GitHub
+(<https://github.com/jeroenhoogland/regsurv-bimj-repro>). To easily
+reproduce all figures, tables, and numerical results, please ensure that
+the intermediate files are downloaded and stored in folder
+`./intermediates/` (this is automatically the case when cloning the
+GitHub repository).
+
+In case of questions or comments please contact
+<j.hoogland@amsterdamumc.nl>
 
 # Software versions
 
